@@ -1,8 +1,8 @@
 import {isArray, isEmpty} from 'lodash';
 
 const MongoClient = require('mongodb').MongoClient;
-const dbName = 'junux-app-generator-db';
-const url = 'mongodb+srv://jx_read_write:pifys6avtpd@app-generator-v93kz.mongodb.net/test?retryWrites=true';
+const dbName = 'mte_db';
+const url = 'mongodb://localhost:27017';
 
 export class dbService {
 

@@ -1,5 +1,6 @@
 export const collections = {
-    applications: "applications"
+    views: "views",
+    viewsTemplates: "viewsTemplates"
 };
 
 const tet = {
