@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "bson-ext": "^2.0.0",
-    "configuration-managment": "git+https://yarden101:pifys6avtpd@bitbucket.org/yarden101/configuration_managment_api.git",
+    "uuid": "^3.3.2",
     "jx-injector": "1.0.8",
     "kerberos": "0.0.24",
     "lodash": "^4.17.10",

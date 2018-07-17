@@ -7,7 +7,6 @@ const tet = {
     views: [{
         viewId: "guid",
         viewName: "string",
-        route: "path",
         instances: {
             id: "guid",
             name: "string",

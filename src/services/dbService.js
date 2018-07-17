@@ -1,4 +1,5 @@
 import {isArray, isEmpty} from 'lodash';
+import generateId from 'uuid/v1';
 
 const MongoClient = require('mongodb').MongoClient;
 const dbName = 'mte_db';
@@ -13,8 +14,6 @@ export class dbService {
     init() {
         this.client = null;
         this.db = null;
-        this.insertResult = null;
-        this.updateResult = null;
     }
 
     async connect() {
@@ -28,13 +27,8 @@ export class dbService {
     }
 
     close() {
-        const result = {
-            insertResult: this.insertResult,
-            updateResult: this.updateResult
-        };
         this.client.close();
         this.init();
-        return result;
     }
 
     async getCollection(collectionName, query, options) {
@@ -63,16 +57,29 @@ export class dbService {
     }
 
     async insert(collectionName, docs) {
+        let idsOrId = [];
+        const addId = (doc) => {
+            doc._id = generateId();
+            return doc._id;
+        };
         if (isArray(docs) && docs.length > 1) {
-            this.insertResult = await db.collection(collectionName).insertMany(docs);
+            const docsWithIds = docs.map((doc) => {
+                const _id = generateId();
+                idsOrId.push(_id);
+                return Object.assign(doc, {_id})
+            });
+            await db.collection(collectionName).insertMany(docsWithIds);
         }
         else if (docs.length === 1) {
-            this.insertResult = await this.db.collection(collectionName).insertOne(docs[0]);
+            idsOrId = addId(docs[0]);
+            await this.db.collection(collectionName).insertOne(docs[0]);
         }
         else {
-            this.insertResult = await this.db.collection(collectionName).insertOne(docs);
+            idsOrId = addId(docs);
+            await this.db.collection(collectionName).insertOne(docs);
         }
-        return this;
+        this.close();
+        return idsOrId;
     }
 
     async update(collectionName, filter, update, options, isMany) {
