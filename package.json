@@ -1,0 +1,32 @@
+{
+  "name": "jx-core",
+  "version": "1.0.0",
+  "description": "enternal api for app genrattion",
+  "main": "bundle.js",
+  "scripts": {
+    "test": "mocha --require babel-register __tests__/**/*.spec.js"
+  },
+  "dependencies": {
+    "bson-ext": "^2.0.0",
+    "configuration-managment": "git+https://yarden101:pifys6avtpd@bitbucket.org/yarden101/configuration_managment_api.git",
+    "jx-injector": "1.0.8",
+    "kerberos": "0.0.24",
+    "lodash": "^4.17.10",
+    "mongodb": "^3.0.10"
+  },
+  "devDependencies": {
+    "@types/node": "^10.3.3",
+    "babel-core": "^6.26.3",
+    "babel-preset-es2015": "^6.24.1",
+    "chai": "^4.1.2",
+    "mocha": "5.1.1",
+    "uglify-es": "3.3.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://yarden101@bitbucket.org/yarden101/jx-core.git"
+  },
+  "author": "Yarden Shacham <yarden101111@gmail.com>",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/yarden101/jx-core#readme"
+}

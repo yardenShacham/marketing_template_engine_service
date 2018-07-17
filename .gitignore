@@ -1,0 +1,6 @@
+node_modules/
+*vcs.xml
+/.idea/vcs.xml
+jx-core.iml
+modules.xml
+package-lock.json
