@@ -90,7 +90,6 @@ export class dbService {
 
             await this.db.collection(collectionName).insertOne(docs, options);
         }
-        this.close();
         return idsOrId;
     }
 
@@ -98,6 +97,5 @@ export class dbService {
         const collection = this.db.collection(collectionName);
         return isMany ? await collection.findOneAndUpdate(filter, update, options)
             : await collection.findOneAndUpdate(filter, update, options);
-        return this;
     }
 }

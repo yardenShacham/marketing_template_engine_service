@@ -18,51 +18,67 @@ export class viewInstanceService {
             };
         }, {});
 
-        return await appInjector.get(appServices.dbService).connect()
-            .update(collections.views, {_id: viewId},
-                {$set: {'instances.$[i].content': params}}, {arrayFilters: filter});
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        const result = await dbService.update(collections.views, {_id: viewId},
+            {$set: {'instances.$[i].content': params}}, {arrayFilters: filter});
+        dbService.close();
+        return result;
     }
 
     async getInstances(viewId) {
-        return await appInjector.get(appServices.dbService).connect()
-            .getCollection(collections.views, {_id: viewId}, null, {instances: 1, _id: 0})
-            .toArray();
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        const result = await dbService.getCollection(collections.views, {_id: viewId}, null, {
+            instances: 1,
+            _id: 0
+        }).toArray();
+        dbService.close();
+        return result;
     }
 
     async appandNewViewInstance(viewId, instanceName) {
         const newInstance = this.getInstanceViewObj(instanceName)
-        await appInjector.get(appServices.dbService).connect()
-            .update(collections.views, {_id: viewId}, {
-                $push: {instances: newInstance}
-            });
-        await this.appandRoute(newInstance._id, this.getDefaultRoute(instanceName));
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        await dbService.update(collections.views, {_id: viewId}, {
+            $push: {instances: newInstance}
+        });
+        await this.appandRoute(newInstance._id, this.getDefaultRoute(instanceName), dbService);
+        dbService.close();
     }
 
-    async appandRoute(instanceId, route) {
-        return await appInjector.get(appServices.dbService).connect()
-            .insert(collections.viewsRoutes, {_id: instanceId, route}, false, {upsert: true});
+    async appandRoute(instanceId, route, dbService = null) {
+        const service = dbService || await appInjector.get(appServices.dbService).connect();
+        const result = await service.insert(collections.viewsRoutes, {_id: instanceId, route}, false, {upsert: true});
+        if (!dbService)
+            service.close();
+
+        return result;
     }
 
     async updateViewInstanceStaticData(viewId, viewInstanceId, instanceName, styles, js) {
         const query = getInstanceQuery(viewId, viewInstanceId);
         let action = this.appandToAction(this.getTemplatesAction(null, styles, js), "$set", "name", instanceName)
 
-        return await appInjector.get(appServices.dbService).connect()
-            .update(collections.views, query, action);
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        const result = dbService.update(collections.views, query, action);
+        dbService.close();
+        return result;
     }
 
     async removeInstance(viewId, instanceId) {
         const query = getInstanceQuery(viewId, instanceId);
-
-        return await appInjector.get(appServices.dbService).connect()
-            .remove(collections.views, query);
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        const result = dbService.remove(collections.views, query);
+        dbService.close();
+        return result;
     }
 
     async getInstance(viewId, instanceId) {
         const query = getInstanceQuery(viewId, instanceId);
 
-        return await appInjector.get(appServices.dbService).connect()
-            .getSingle(collections.views, query);
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        const result = dbService.getSingle(collections.views, query);
+        dbService.close();
+        return result;
     }
 
     getInstanceViewObj(instanceName, styles, js, content = {}) {

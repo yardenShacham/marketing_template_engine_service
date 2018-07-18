@@ -6,46 +6,53 @@ import {appInjector} from '../dependencies.register'
 export class viewsService {
 
     async createNewView(viewName) {
-        return await appInjector.get(appServices.dbService).connect()
-            .insert(collections.views, {
-                name: viewName,
-                instances: []
-            });
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        const result = await dbService.insert(collections.views, {
+            name: viewName,
+            instances: []
+        });
+        dbService.close();
+        return result;
     }
 
-    async appandViewTemplate(viewId, htmlTemplate, css, js) {
-        await appInjector.get(appServices.dbService).connect()
-            .insert(collections.viewsTemplates, {
-                _id: viewId,
-                html: htmlTemplate,
-                css: css || null,
-                js: js || null
-            }, false, {upsert: true});
+    async appendViewTemplate(viewId, htmlTemplate, css, js) {
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        await dbService.insert(collections.viewsTemplates, {
+            _id: viewId,
+            html: htmlTemplate,
+            css: css || null,
+            js: js || null
+        }, false, {upsert: true});
         await appInjector.get(appServices.viewInstanceService)
             .updateContentParams(viewId, htmlTemplate);
+        dbService.close();
     }
 
     async getAllViews() {
-        return await appInjector.get(appServices.dbService).connect()
-            .getCollection(collections.views, null, null, {}).map((view) => ({
-                viewId: view._id,
-                name: view.name
-            }));
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        const result = dbService.getCollection(collections.views, null, null, {}).map((view) => ({
+            viewId: view._id,
+            name: view.name
+        }));
+
+        dbService.close();
+        return result;
     }
 
     async removeView(viewId) {
-        await appInjector.get(appServices.dbService).connect()
-            .removeById(collections.views, viewId);
-        await appInjector.get(appServices.dbService).connect()
-            .removeById(collections.viewsTemplates, viewId);
-        await appInjector.get(appServices.dbService).connect()
-            .removeById(collections.viewsRoutes, viewId);
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        await dbService.removeById(collections.views, viewId);
+        await dbService.removeById(collections.viewsTemplates, viewId);
+        await dbService.removeById(collections.viewsRoutes, viewId);
+
+        dbService.close();
         return true;
     }
 
     async getViewTemplate(viewId) {
-        return await appInjector.get(appServices.dbService).connect()
-            .getSingle(collections.viewsTemplates, {_id: viewId});
+        const dbService = await appInjector.get(appServices.dbService).connect();
+        await dbService.getSingle(collections.viewsTemplates, {_id: viewId});
+        dbService.close();
     }
 
     getTemplatesAction(htmlTemplate, css, js) {
