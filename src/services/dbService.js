@@ -31,9 +31,14 @@ export class dbService {
         this.init();
     }
 
-    async getCollection(collectionName, query, options) {
-        return await this.db.collection(collectionName)
-            .find(query || {}, options || {}).toArray();
+    async getCollection(collectionName, query, options, projectionInfo) {
+        const result = await this.db.collection(collectionName)
+            .find(query || {}, options || {});
+
+        if (projectionInfo)
+            return result.project(projectionInfo);
+
+        return result;
     }
 
     async getSingle(collectionName, query, options) {
@@ -43,7 +48,7 @@ export class dbService {
 
     async removeById(collectionName, docId) {
         return await this.db.collection(collectionName)
-            .deleteOne({_id: docId});
+            .findOneAndDelete({_id: docId});
     }
 
     async isCollectionExist(collectionName) {
@@ -53,30 +58,37 @@ export class dbService {
     async remove(collectionName, query) {
         if (query && !isEmpty(query))
             return await this.db.collection(collectionName)
-                .deleteOne(query);
+                .findOneAndDelete(query);
     }
 
-    async insert(collectionName, docs) {
-        let idsOrId = [];
+    async insert(collectionName, docs, isAutoGenerate = true, options = {}) {
+        let idsOrId = isAutoGenerate ? [] : null;
         const addId = (doc) => {
             doc._id = generateId();
             return doc._id;
         };
         if (isArray(docs) && docs.length > 1) {
-            const docsWithIds = docs.map((doc) => {
-                const _id = generateId();
-                idsOrId.push(_id);
-                return Object.assign(doc, {_id})
-            });
-            await db.collection(collectionName).insertMany(docsWithIds);
+            let docsWithIds = docs;
+            if (isAutoGenerate) {
+                docsWithIds = docs.map((doc) => {
+                    const _id = generateId();
+                    idsOrId.push(_id);
+                    return Object.assign(doc, {_id})
+                });
+            }
+            await db.collection(collectionName).insertMany(docsWithIds, options);
         }
         else if (docs.length === 1) {
-            idsOrId = addId(docs[0]);
-            await this.db.collection(collectionName).insertOne(docs[0]);
+            if (isAutoGenerate)
+                idsOrId = addId(docs[0]);
+
+            await this.db.collection(collectionName).insertOne(docs[0], options);
         }
         else {
-            idsOrId = addId(docs);
-            await this.db.collection(collectionName).insertOne(docs);
+            if (isAutoGenerate)
+                idsOrId = addId(docs);
+
+            await this.db.collection(collectionName).insertOne(docs, options);
         }
         this.close();
         return idsOrId;
@@ -84,8 +96,8 @@ export class dbService {
 
     async update(collectionName, filter, update, options, isMany) {
         const collection = this.db.collection(collectionName);
-        return isMany ? await collection.updateMany(filter, update, options)
-            : await collection.updateOne(filter, update, options);
+        return isMany ? await collection.findOneAndUpdate(filter, update, options)
+            : await collection.findOneAndUpdate(filter, update, options);
         return this;
     }
 }

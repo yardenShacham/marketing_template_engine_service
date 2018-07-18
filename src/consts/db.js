@@ -1,6 +1,7 @@
 export const collections = {
     views: "views",
-    viewsTemplates: "viewsTemplates"
+    viewsTemplates: "viewsTemplates",
+    viewsRoutes: "views_routes"
 };
 
 const tet = {

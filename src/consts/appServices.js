@@ -1,3 +1,5 @@
 export const appServices = {
-    dbService: "dbService"
+    dbService: "dbService",
+    viewInstanceService: "viewInstanceService",
+    viewsService: "viewsService"
 };
