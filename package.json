@@ -4,7 +4,7 @@
   "description": "enternal api for app genrattion",
   "main": "bundle.js",
   "scripts": {
-    "test": "mocha --require babel-register __tests__/**/*.spec.js"
+    "test": "mocha --require babel-register --timeout 15000 __tests__/**/*.spec.js"
   },
   "dependencies": {
     "bson-ext": "^2.0.0",
