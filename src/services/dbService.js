@@ -31,15 +31,21 @@ export class dbService {
         this.init();
     }
 
-    async getCollection(collectionName, query, options, projectionInfo) {
-        const result = await this.db.collection(collectionName)
+    async getCollection(collectionName, query, options) {
+        return await this.db.collection(collectionName)
             .find(query || {}, options || {});
-
-        if (projectionInfo)
-            return result.project(projectionInfo);
-
-        return result;
     }
+
+    getDbCollection(collectionName) {
+        return this.db.collection(collectionName);
+    }
+
+
+    async getAndMap(collectionName, mapFunc, query) {
+        return await this.db.collection(collectionName)
+            .find(query || {}).map(mapFunc).toArray();
+    }
+
 
     async getSingle(collectionName, query, options) {
         return await this.db.collection(collectionName)
@@ -88,14 +94,20 @@ export class dbService {
             if (isAutoGenerate)
                 idsOrId = addId(docs);
 
-            await this.db.collection(collectionName).insertOne(docs, options);
+            const result = await this.db.collection(collectionName).insertOne(docs, options);
         }
         return idsOrId;
     }
 
-    async update(collectionName, filter, update, options, isMany) {
+    async update(collectionName, query, update, options, isMany) {
         const collection = this.db.collection(collectionName);
-        return isMany ? await collection.findOneAndUpdate(filter, update, options)
-            : await collection.findOneAndUpdate(filter, update, options);
+        return isMany ? await collection.updateMany(query, update, options)
+            : await collection.findOneAndUpdate(query, update, options);
     }
+
+    async aggregate(collectionName, pipeline, options) {
+        const collection = this.db.collection(collectionName);
+        return await collection.aggregate(pipeline, options);
+    }
+
 }

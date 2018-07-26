@@ -8,7 +8,7 @@ export const getTemplateParams = (htmlTemplate) => {
     while (prop !== null) {
         prop = regex.exec(htmlTemplate);
         if (prop !== null)
-            params.push(prop);
+            params.push(prop[1]);
     }
 
     return params;

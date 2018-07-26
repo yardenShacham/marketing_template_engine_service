@@ -1,6 +1,6 @@
 export const collections = {
     views: "views",
-    viewsTemplates: "viewsTemplates",
+    viewsTemplates: "views_templates",
     viewsRoutes: "views_routes"
 };
 

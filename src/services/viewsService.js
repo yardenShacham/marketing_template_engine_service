@@ -1,12 +1,16 @@
 import {appServices} from '../consts/appServices';
 import {collections} from '../consts/db';
-import {getInstanceQuery} from '../Utils/db';
+import {getTemplatesAction} from '../Utils/db';
 import {appInjector} from '../dependencies.register'
 
 export class viewsService {
 
+    async getDbService() {
+        return this.dbService || await appInjector.get(appServices.dbService).connect();
+    }
+
     async createNewView(viewName) {
-        const dbService = await appInjector.get(appServices.dbService).connect();
+        const dbService = await this.getDbService();
         const result = await dbService.insert(collections.views, {
             name: viewName,
             instances: []
@@ -15,22 +19,33 @@ export class viewsService {
         return result;
     }
 
-    async appendViewTemplate(viewId, htmlTemplate, css, js) {
-        const dbService = await appInjector.get(appServices.dbService).connect();
+    async updateViewTemplate(viewId, htmlTemplate, css, js) {
+        const dbService = await this.getDbService();
+        const {html} = await this.getViewTemplate(viewId);
+        await dbService.update(collections.viewsTemplates, {_id: viewId}, getTemplatesAction(htmlTemplate, css, js));
+        await appInjector.get(appServices.viewInstanceService)
+            .updateContentParams(viewId, htmlTemplate, html);
+        dbService.close();
+        return true;
+    }
+
+    async appendNewViewTemplate(viewId, htmlTemplate, css, js) {
+        const dbService = await this.getDbService();
         await dbService.insert(collections.viewsTemplates, {
             _id: viewId,
             html: htmlTemplate,
             css: css || null,
             js: js || null
-        }, false, {upsert: true});
+        }, false);
         await appInjector.get(appServices.viewInstanceService)
             .updateContentParams(viewId, htmlTemplate);
         dbService.close();
+        return true;
     }
 
     async getAllViews() {
-        const dbService = await appInjector.get(appServices.dbService).connect();
-        const result = dbService.getCollection(collections.views, null, null, {}).map((view) => ({
+        const dbService = await this.getDbService();
+        const result = await dbService.getAndMap(collections.views, (view) => ({
             viewId: view._id,
             name: view.name
         }));
@@ -40,33 +55,42 @@ export class viewsService {
     }
 
     async removeView(viewId) {
-        const dbService = await appInjector.get(appServices.dbService).connect();
-        await dbService.removeById(collections.views, viewId);
+        const dbService = await this.getDbService();
+        await this.removeAllRelatedRoute(viewId);
         await dbService.removeById(collections.viewsTemplates, viewId);
-        await dbService.removeById(collections.viewsRoutes, viewId);
+        await dbService.removeById(collections.views, viewId);
 
         dbService.close();
         return true;
     }
 
+    async removeAllRelatedRoute(viewId) {
+        const dbService = await this.getDbService();
+        const [idsToRemove] = await dbService.getDbCollection(collections.views)
+            .find({_id: viewId})
+            .project({
+                "instances._id": 1,
+                _id: 0
+            })
+            .map((view) => view.instances)
+            .toArray();
+
+        await dbService.getDbCollection(collections.viewsRoutes)
+            .remove({_id: {$in: idsToRemove.map(item => item._id)}})
+    }
+
     async getViewTemplate(viewId) {
-        const dbService = await appInjector.get(appServices.dbService).connect();
-        await dbService.getSingle(collections.viewsTemplates, {_id: viewId});
+        const dbService = await this.getDbService();
+        const result = await dbService.getSingle(collections.viewsTemplates, {_id: viewId});
         dbService.close();
+        return result;
     }
 
-    getTemplatesAction(htmlTemplate, css, js) {
-        let action = {$set: {}};
-        if (htmlTemplate)
-            action.$set.html = htmlTemplate;
-        if (css)
-            action.$set.styles = css;
-        if (js)
-            action.$set.js = js;
-        return action;
+    async getView(viewId) {
+        const dbService = await this.getDbService();
+        const result = await dbService.getSingle(collections.views, {_id: viewId});
+        dbService.close();
+        return result;
     }
 
-    appandToAction(action, actionType, propName, value) {
-        action[actionType][propName] = value;
-    }
 }
