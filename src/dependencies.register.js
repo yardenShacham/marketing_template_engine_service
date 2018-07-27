@@ -5,8 +5,6 @@ import {viewsService} from "./services/viewsService";
 import {viewInstanceService} from "./services/viewInstanceService";
 
 
-export const appInjector = new injector();
-
 const registerAppDependencies = (appInjector) => {
     appInjector.register(appServices.dbService, dbService);
     appInjector.register(appServices.viewsService, viewsService);
@@ -14,8 +12,8 @@ const registerAppDependencies = (appInjector) => {
 };
 
 
-
 export const registerDependencies = () => {
+    const appInjector = new injector();
     if (appInjector) {
         registerAppDependencies(appInjector);
         return appInjector;

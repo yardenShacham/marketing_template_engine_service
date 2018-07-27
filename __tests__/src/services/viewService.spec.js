@@ -1,6 +1,6 @@
 import {appServices} from '../../../src/consts/appServices';
 import {assert} from 'chai';
-import {getInjector} from '../../../src';
+import {getInjector} from '../../../src/app-injector';
 
 describe('View Service Service', () => {
     let viewService = getInjector().get(appServices.viewsService);
@@ -50,17 +50,17 @@ describe('View Service Service', () => {
         });
     });
 
-    it('View Service should return all views', () => {
+    it('View Service should return all view', () => {
         return viewService.createNewView("test view 2").then((viewId) => {
             createdSecondViewId = viewId;
             return viewService.getAllViews().then((views) => {
-                assert(views.length === 2, "there is missing views");
+                assert(views.length === 2, "there is missing view");
                 assert(views[0].viewId && views[0].name, "there is missing parameters");
             });
         });
     });
 
-    it('View Service should remove all test views', () => {
+    it('View Service should remove all test view', () => {
         const removeTasks = [createdViewId, createdSecondViewId].map((viewId) => {
             return viewService.removeView(viewId);
         });

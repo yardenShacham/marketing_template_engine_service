@@ -1,3 +1,3 @@
 import {registerDependencies} from './dependencies.register';
 
-export const getInjector = () => registerDependencies();
+export const appInjector = registerDependencies();

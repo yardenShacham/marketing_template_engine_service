@@ -5,7 +5,7 @@ import generateId from 'uuid/v1';
 import {getTemplateParams} from '../Utils/string';
 
 import {getInstanceQuery, getTemplatesAction} from '../Utils/db';
-import {appInjector} from '../dependencies.register'
+import {appInjector} from '../app-injector'
 
 
 export class viewInstanceService {

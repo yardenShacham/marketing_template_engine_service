@@ -1,7 +1,7 @@
 import {appServices} from '../../../src/consts/appServices';
 import {collections} from '../../../src/consts/db';
 import {assert} from 'chai';
-import {getInjector} from '../../../src';
+import {getInjector} from '../../../src/app-injector';
 
 describe('dbService Service', () => {
     let dbService = getInjector().get(appServices.dbService);

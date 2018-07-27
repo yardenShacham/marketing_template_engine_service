@@ -1,7 +1,7 @@
 import {appServices} from '../consts/appServices';
 import {collections} from '../consts/db';
 import {getTemplatesAction} from '../Utils/db';
-import {appInjector} from '../dependencies.register'
+import {appInjector} from '../app-injector';
 
 export class viewsService {
 

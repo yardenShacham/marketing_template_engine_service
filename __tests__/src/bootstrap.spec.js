@@ -1,5 +1,5 @@
 import {assert} from 'chai';
-import {getInjector} from '../../src';
+import {getInjector} from '../../src/app-injector';
 import {appServices} from '../../src/consts/appServices';
 
 describe('The Bootstrap prosess of the application ', () => {
