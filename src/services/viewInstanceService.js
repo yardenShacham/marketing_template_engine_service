@@ -33,7 +33,7 @@ export class viewInstanceService {
 
     async getInstances(viewId) {
         const dbService = await this.getDbService();
-        const result = await dbService.getCollection(collections.views, {_id: viewId})
+        const result = await dbService.getCollectionCursor(collections.views, {_id: viewId})
             .project({
                 instances: 1,
                 _id: 0

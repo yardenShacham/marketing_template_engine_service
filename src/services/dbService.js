@@ -31,9 +31,14 @@ export class dbService {
         this.init();
     }
 
-    async getCollection(collectionName, query, options) {
+    async getCollectionCursor(collectionName, query, options) {
         return await this.db.collection(collectionName)
             .find(query || {}, options || {});
+    }
+
+    async getCollection(collectionName, query, options) {
+        return await this.db.collection(collectionName)
+            .find(query || {}, options || {}).toArray();
     }
 
     getDbCollection(collectionName) {
