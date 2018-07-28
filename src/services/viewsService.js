@@ -19,16 +19,6 @@ export class viewsService {
         return result;
     }
 
-    async updateViewTemplate(viewId, htmlTemplate, css, js) {
-        const dbService = await this.getDbService();
-        const {html} = await this.getViewTemplate(viewId);
-        await dbService.update(collections.viewsTemplates, {_id: viewId}, getTemplatesAction(htmlTemplate, css, js));
-        await appInjector.get(appServices.viewInstanceService)
-            .updateContentParams(viewId, htmlTemplate, html);
-        dbService.close();
-        return true;
-    }
-
     async appendNewViewTemplate(viewId, htmlTemplate, css, js) {
         const dbService = await this.getDbService();
         await dbService.insert(collections.viewsTemplates, {
@@ -39,6 +29,16 @@ export class viewsService {
         }, false);
         await appInjector.get(appServices.viewInstanceService)
             .updateContentParams(viewId, htmlTemplate);
+        dbService.close();
+        return true;
+    }
+
+    async updateViewTemplate(viewId, htmlTemplate, css, js) {
+        const dbService = await this.getDbService();
+        const {html} = await this.getViewTemplate(viewId);
+        await dbService.update(collections.viewsTemplates, {_id: viewId}, getTemplatesAction(htmlTemplate, css, js));
+        await appInjector.get(appServices.viewInstanceService)
+            .updateContentParams(viewId, htmlTemplate, html);
         dbService.close();
         return true;
     }

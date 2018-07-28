@@ -13,8 +13,9 @@ export class AppRouter {
 
     get(route) {
         return addtionalFunctionalityDecorator((originalFunction) => {
-            this.router.get(route, (req, res) => {
-                const result = originalFunction(req);
+            this.router.get(route, async (req, res) => {
+                let result = await originalFunction(req);
+
                 if (result instanceof Error) {
                     const {status, error} = result;
                     res.status(status).send(error);
@@ -26,19 +27,55 @@ export class AppRouter {
         });
     };
 
-    Post() {
+    post(route) {
+        return addtionalFunctionalityDecorator((originalFunction) => {
+            this.router.post(route, async (req, res) => {
+                let result = await originalFunction(req.body);
 
+                if (result instanceof Error) {
+                    const {status, error} = result;
+                    res.status(status).send(error);
+                }
+                else {
+                    res.json(result);
+                }
+            });
+        });
     }
 
-    Delete() {
+    put(route) {
+        return addtionalFunctionalityDecorator((originalFunction) => {
+            this.router.put(route, async (req, res) => {
+                let result = await originalFunction(req.body);
 
+                if (result instanceof Error) {
+                    const {status, error} = result;
+                    res.status(status).send(error);
+                }
+                else {
+                    res.json(result);
+                }
+            });
+        });
     }
 
-    Put() {
+    delete(route, status = 200) {
+        return addtionalFunctionalityDecorator((originalFunction) => {
+            this.router.post(route, async (req, res) => {
+                let result = await originalFunction(req.params);
 
+                if (result instanceof Error) {
+                    const {status, error} = result;
+                    res.status(status || 500).send(error);
+                }
+                else {
+                    res.status(status).json(result);
+                }
+            });
+        });
     }
 
-    Custom() {
+    custom() {
 
     }
 };
