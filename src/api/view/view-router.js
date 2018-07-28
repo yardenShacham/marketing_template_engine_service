@@ -1,11 +1,16 @@
-import {AppRouter, get} from '../infra/router';
+import {AppRouter} from '../infra/router';
+
+const router = new AppRouter();
 
 class ViewRouter {
 
-    @get('/')
+    @router.get('/')
     getViews(req, res) {
         return ["yarden works"];
     }
 }
 
-export default AppRouter(ViewRouter);
+export default router.getRouter();
+
+
+

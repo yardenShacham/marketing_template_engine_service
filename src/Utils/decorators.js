@@ -1,13 +1,11 @@
-export const overideMethodDecorator = (overideFunction) => {
+export const addtionalFunctionalityDecorator = (func) => {
     return function decorator(target, name, descriptor) {
         const {value: original} = descriptor;
         if (typeof original === 'function') {
-            descriptor.value = (...args) => {
-                try {
-                    overideFunction(original, args);
-                } catch (e) {
-                    throw e;
-                }
+            try {
+                func(original);
+            } catch (e) {
+                throw e;
             }
         }
 

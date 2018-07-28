@@ -1,5 +1,5 @@
-import viewRouter from './view-router';
+import ViewRouter from './view-router';
 
 export default (app) => {
-    app.use('/views', viewRouter);
+    app.use('/views', ViewRouter);
 };

@@ -1,6 +1,6 @@
-import startAppInjector from './app-injector';
+import startAppInjector from './src/app-injector';
 import express from 'express';
-import startApp from './api';
+import startApp from './src/api';
 
 const app = express();
 startApp(app);

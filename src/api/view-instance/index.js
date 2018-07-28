@@ -1,5 +1,5 @@
-import viewInstanceRouter from './view-instance-router';
+import ViewInstanceRouter from './view-instance-router';
 
 export default (app) => {
-    app.use('/view-instances', viewInstanceRouter);
+    app.use('/view-instances', ViewInstanceRouter);
 };
