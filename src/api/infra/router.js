@@ -61,8 +61,8 @@ export class AppRouter {
 
     delete(route, status = 200) {
         return addtionalFunctionalityDecorator((originalFunction) => {
-            this.router.post(route, async (req, res) => {
-                let result = await originalFunction(req.params);
+            this.router.delete(route, async (req, res) => {
+                let result = await originalFunction(req.body);
 
                 if (result instanceof Error) {
                     const {status, error} = result;

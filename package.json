@@ -11,6 +11,7 @@
     "body-parser": "^1.18.3",
     "bson-ext": "^2.0.0",
     "express": "^4.16.3",
+    "cors": "^2.8.4",
     "jx-injector": "1.0.8",
     "kerberos": "0.0.24",
     "lodash": "^4.17.10",

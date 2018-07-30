@@ -55,13 +55,16 @@ export class viewsService {
     }
 
     async removeView(viewId) {
-        const dbService = await this.getDbService();
-        await this.removeAllRelatedRoute(viewId);
-        await dbService.removeById(collections.viewsTemplates, viewId);
-        await dbService.removeById(collections.views, viewId);
+        if (viewId) {
+            const dbService = await this.getDbService();
+            await this.removeAllRelatedRoute(viewId);
+            await dbService.removeById(collections.viewsTemplates, viewId);
+            await dbService.removeById(collections.views, viewId);
 
-        dbService.close();
-        return true;
+            dbService.close();
+            return true;
+        }
+        return false;
     }
 
     async removeAllRelatedRoute(viewId) {

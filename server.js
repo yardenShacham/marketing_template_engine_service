@@ -4,6 +4,6 @@ import startApp from './src/api';
 
 const app = express();
 startApp(app);
-const port = 3000;
+const port = 8080;
 app.listen(port);
 console.log('listening on port ', port);

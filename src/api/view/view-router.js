@@ -16,7 +16,7 @@ class ViewRouter {
         return appInjector.get(appServices.viewsService).createNewView(viewName);
     }
 
-    @router.delete('/:viewId')
+    @router.delete('/')
     removeView({viewId}) {
         return appInjector.get(appServices.viewsService).removeView(viewId);
     }
