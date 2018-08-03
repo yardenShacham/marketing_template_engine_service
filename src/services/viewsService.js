@@ -13,10 +13,52 @@ export class viewsService {
         const dbService = await this.getDbService();
         const result = await dbService.insert(collections.views, {
             name: viewName,
+            hasHtmlTemplate: false,
             instances: []
         });
         dbService.close();
-        return result;
+        if (result) {
+            return {
+                viewId: result,
+                name: viewName,
+                hasHtmlTemplate: false,
+                instances: []
+            };
+        }
+
+        return null;
+    }
+
+    async updateViewName(viewId, viewName) {
+        const dbService = await this.getDbService();
+        const result = await dbService.update(collections.views, {_id: viewId}, {$set: {name: viewName}});
+        dbService.close();
+        if (result) {
+            const {value} = result;
+            return {
+                viewId: value._id,
+                name: viewName,
+                hasHtmlTemplate: value.hasHtmlTemplate,
+            };
+        }
+    }
+
+    async appendHtmlTemplate(viewId, html) {
+        const dbService = await this.getDbService();
+        const viewInfo = await dbService.getSingle(collections.views, {_id: viewId}, {
+            instances: 0
+        });
+        if (viewInfo.hasHtmlTemplate) {
+            await this.updateViewTemplate(viewId, html);
+        }
+        else {
+            await this.appendNewViewTemplate(viewId, html);
+        }
+        return {
+            viewId: viewInfo._id,
+            name: viewInfo.name,
+            hasHtmlTemplate: true
+        };
     }
 
     async appendNewViewTemplate(viewId, htmlTemplate, css, js) {
@@ -29,8 +71,8 @@ export class viewsService {
         }, false);
         await appInjector.get(appServices.viewInstanceService)
             .updateContentParams(viewId, htmlTemplate);
+        await dbService.update(collections.views, {_id: viewId}, {$set: {hasHtmlTemplate: true}});
         dbService.close();
-        return true;
     }
 
     async updateViewTemplate(viewId, htmlTemplate, css, js) {
@@ -47,7 +89,8 @@ export class viewsService {
         const dbService = await this.getDbService();
         const result = await dbService.getAndMap(collections.views, (view) => ({
             viewId: view._id,
-            name: view.name
+            name: view.name,
+            hasHtmlTemplate: view.hasHtmlTemplate
         }));
 
         dbService.close();

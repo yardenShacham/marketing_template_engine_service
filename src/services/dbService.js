@@ -52,9 +52,9 @@ export class dbService {
     }
 
 
-    async getSingle(collectionName, query, options) {
+    async getSingle(collectionName, query, projection) {
         return await this.db.collection(collectionName)
-            .findOne(query || {}, options || {});
+            .findOne(query || {}, projection || {});
     }
 
     async removeById(collectionName, docId) {

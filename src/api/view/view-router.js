@@ -22,16 +22,15 @@ class ViewRouter {
     }
 
     @router.post('/viewTemplate')
-    appendNewViewTemplate({viewId, htmlTemplate, css, js}) {
-
-    }
-
-    @router.put('/viewTemplate')
-    updateViewTemplate({viewId, htmlTemplate, css, js}) {
+    appendHtmlTemplate({viewId, htmlTemplate}) {
         return appInjector.get(appServices.viewsService)
-            .updateViewTemplate(viewId, htmlTemplate, css, js);
+            .appendHtmlTemplate(viewId, htmlTemplate);
     }
 
+    @router.put('/:viewId')
+    updateViewName({viewId}, {viewName}) {
+        return appInjector.get(appServices.viewsService).updateViewName(viewId, viewName);
+    }
 }
 
 export default router.getRouter();
