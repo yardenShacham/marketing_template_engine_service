@@ -14,11 +14,11 @@ export class AppRouter {
     get(route) {
         return addtionalFunctionalityDecorator((originalFunction) => {
             this.router.get(route, async (req, res) => {
-                let result = await originalFunction(req);
+                let result = await originalFunction(req.query);
 
                 if (result instanceof Error) {
-                    const {status, error} = result;
-                    res.status(status).send(error);
+                    const {status, code} = result.data;
+                    res.status(status).send(code);
                 }
                 else {
                     res.json(result);
@@ -33,8 +33,8 @@ export class AppRouter {
                 let result = await originalFunction(req.body);
 
                 if (result instanceof Error) {
-                    const {status, error} = result;
-                    res.status(status).send(error);
+                    const {status, code} = result.data;
+                    res.status(status).send(code);
                 }
                 else {
                     res.json(result);
@@ -49,8 +49,8 @@ export class AppRouter {
                 let result = await originalFunction(req.params, req.body);
 
                 if (result instanceof Error) {
-                    const {status, error} = result;
-                    res.status(status).send(error);
+                    const {status, code} = result.data;
+                    res.status(status).send(code);
                 }
                 else {
                     res.json(result);
@@ -65,8 +65,8 @@ export class AppRouter {
                 let result = await originalFunction(req.body);
 
                 if (result instanceof Error) {
-                    const {status, error} = result;
-                    res.status(status || 500).send(error);
+                    const {status, code} = result.data;
+                    res.status(status).send(code);
                 }
                 else {
                     res.status(status).json(result);

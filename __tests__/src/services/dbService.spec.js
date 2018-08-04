@@ -18,7 +18,7 @@ describe('dbService Service', () => {
     it('dbService service should insert doc', () => {
         return dbService.insert(collections.views, {
             _id: 'test'
-        }, false).then((result) => {
+        }).then((result) => {
             let i = result;
         });
     });

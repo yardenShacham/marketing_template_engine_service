@@ -1,5 +1,7 @@
 import {isArray, isEmpty} from 'lodash';
-import generateId from 'uuid/v1';
+import {getQueryId} from '../Utils/db';
+import {getError} from '../api/infra/errorHandler';
+import {errorTypes} from '../consts/errors';
 
 const MongoClient = require('mongodb').MongoClient;
 const dbName = 'mte_db';
@@ -16,9 +18,9 @@ export class dbService {
         this.db = null;
     }
 
-    async connect() {
+    async connect(options = {}) {
         try {
-            this.client = await MongoClient.connect(url);
+            this.client = await MongoClient.connect(url, Object.assign({useNewUrlParser: true}, options));
             this.db = this.client.db(dbName);
             return this;
         } catch (err) {
@@ -31,8 +33,8 @@ export class dbService {
         this.init();
     }
 
-    async getCollectionCursor(collectionName, query, options) {
-        return await this.db.collection(collectionName)
+    getCollectionCursor(collectionName, query, options) {
+        return this.db.collection(collectionName)
             .find(query || {}, options || {});
     }
 
@@ -54,12 +56,12 @@ export class dbService {
 
     async getSingle(collectionName, query, projection) {
         return await this.db.collection(collectionName)
-            .findOne(query || {}, projection || {});
+            .findOne(query || {}, projection ? {fields: projection} : null);
     }
 
     async removeById(collectionName, docId) {
         return await this.db.collection(collectionName)
-            .findOneAndDelete({_id: docId});
+            .findOneAndDelete(getQueryId(docId));
     }
 
     async isCollectionExist(collectionName) {
@@ -67,41 +69,44 @@ export class dbService {
     }
 
     async remove(collectionName, query) {
-        if (query && !isEmpty(query))
-            return await this.db.collection(collectionName)
-                .findOneAndDelete(query);
+        try {
+            if (query && !isEmpty(query)) {
+                const result = await this.db.collection(collectionName)
+                    .findOneAndDelete(query);
+                return result;
+            }
+            return getError(errorTypes.generalError, e);
+        } catch (e) {
+            console.log(e);
+            return getError(errorTypes.generalError, e);
+        }
     }
 
-    async insert(collectionName, docs, isAutoGenerate = true, options = {}) {
-        let idsOrId = isAutoGenerate ? [] : null;
-        const addId = (doc) => {
-            doc._id = generateId();
-            return doc._id;
-        };
-        if (isArray(docs) && docs.length > 1) {
-            let docsWithIds = docs;
-            if (isAutoGenerate) {
-                docsWithIds = docs.map((doc) => {
-                    const _id = generateId();
-                    idsOrId.push(_id);
-                    return Object.assign(doc, {_id})
-                });
+    async removeArrayItemById(collectionName, arrayName, query, id) {
+        try {
+            if (query && !isEmpty(query)) {
+                await  this.update(collectionName, query, {$pull: {[arrayName]: getQueryId(id)}});
             }
-            await db.collection(collectionName).insertMany(docsWithIds, options);
+            return getError(errorTypes.generalError, e);
+        } catch (e) {
+            console.log(e);
+            return getError(errorTypes.generalError, e);
+        }
+    }
+
+    async insert(collectionName, docs, options = {}) {
+        let result = null;
+        if (isArray(docs) && docs.length > 1) {
+            result = await db.collection(collectionName).insertMany(docs, options);
         }
         else if (docs.length === 1) {
-            if (isAutoGenerate)
-                idsOrId = addId(docs[0]);
-
-            await this.db.collection(collectionName).insertOne(docs[0], options);
+            result = await this.db.collection(collectionName)
+                .insertOne(docs[0], options);
         }
         else {
-            if (isAutoGenerate)
-                idsOrId = addId(docs);
-
-            const result = await this.db.collection(collectionName).insertOne(docs, options);
+            result = await this.db.collection(collectionName).insertOne(docs, options);
         }
-        return idsOrId;
+        return result.insertedId;
     }
 
     async update(collectionName, query, update, options, isMany) {
@@ -110,9 +115,25 @@ export class dbService {
             : await collection.findOneAndUpdate(query, update, options);
     }
 
-    async aggregate(collectionName, pipeline, options) {
+    async getSingleFromCursor(cursor) {
+        let result = null;
+        if (await cursor.hasNext()) {
+            result = await cursor.next();
+        }
+
+        return result;
+    }
+
+    async getAllCursor(cursor) {
+        let result = await cursor.toArray();
+
+
+        return result;
+    }
+
+    aggregate(collectionName, pipeline, options) {
         const collection = this.db.collection(collectionName);
-        return await collection.aggregate(pipeline, options);
+        return collection.aggregate(pipeline, options);
     }
 
 }

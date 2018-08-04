@@ -1,6 +1,8 @@
 import {appServices} from '../consts/appServices';
 import {collections} from '../consts/db';
-import {getTemplatesAction} from '../Utils/db';
+import {errorTypes} from '../consts/errors';
+import {getError} from '../api/infra/errorHandler';
+import {getTemplatesAction, getQueryId, getObjectId} from '../Utils/db';
 import {appInjector} from '../app-injector';
 
 export class viewsService {
@@ -11,15 +13,15 @@ export class viewsService {
 
     async createNewView(viewName) {
         const dbService = await this.getDbService();
-        const result = await dbService.insert(collections.views, {
+        const newViewId = await dbService.insert(collections.views, {
             name: viewName,
             hasHtmlTemplate: false,
             instances: []
         });
         dbService.close();
-        if (result) {
+        if (newViewId) {
             return {
-                viewId: result,
+                viewId: newViewId,
                 name: viewName,
                 hasHtmlTemplate: false,
                 instances: []
@@ -31,21 +33,28 @@ export class viewsService {
 
     async updateViewName(viewId, viewName) {
         const dbService = await this.getDbService();
-        const result = await dbService.update(collections.views, {_id: viewId}, {$set: {name: viewName}});
-        dbService.close();
-        if (result) {
-            const {value} = result;
-            return {
-                viewId: value._id,
-                name: viewName,
-                hasHtmlTemplate: value.hasHtmlTemplate,
-            };
+        try {
+            const result = await dbService.update(collections.views, getQueryId(viewId), {$set: {name: viewName}});
+            dbService.close();
+            if (result && result.value) {
+                const {value} = result;
+                return {
+                    viewId: value._id,
+                    name: viewName,
+                    hasHtmlTemplate: value.hasHtmlTemplate,
+                };
+            }
+            return getError(errorTypes.generalError);
         }
+        catch (e) {
+            return getError(errorTypes.generalError, e);
+        }
+
     }
 
     async appendHtmlTemplate(viewId, html) {
         const dbService = await this.getDbService();
-        const viewInfo = await dbService.getSingle(collections.views, {_id: viewId}, {
+        const viewInfo = await dbService.getSingle(collections.views, getQueryId(viewId), {
             instances: 0
         });
         if (viewInfo.hasHtmlTemplate) {
@@ -64,21 +73,21 @@ export class viewsService {
     async appendNewViewTemplate(viewId, htmlTemplate, css, js) {
         const dbService = await this.getDbService();
         await dbService.insert(collections.viewsTemplates, {
-            _id: viewId,
+            _id: getObjectId(viewId),
             html: htmlTemplate,
             css: css || null,
             js: js || null
-        }, false);
+        });
         await appInjector.get(appServices.viewInstanceService)
             .updateContentParams(viewId, htmlTemplate);
-        await dbService.update(collections.views, {_id: viewId}, {$set: {hasHtmlTemplate: true}});
+        await dbService.update(collections.views, getQueryId(viewId), {$set: {hasHtmlTemplate: true}});
         dbService.close();
     }
 
     async updateViewTemplate(viewId, htmlTemplate, css, js) {
         const dbService = await this.getDbService();
         const {html} = await this.getViewTemplate(viewId);
-        await dbService.update(collections.viewsTemplates, {_id: viewId}, getTemplatesAction(htmlTemplate, css, js));
+        await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction(htmlTemplate, css, js));
         await appInjector.get(appServices.viewInstanceService)
             .updateContentParams(viewId, htmlTemplate, html);
         dbService.close();
@@ -113,7 +122,7 @@ export class viewsService {
     async removeAllRelatedRoute(viewId) {
         const dbService = await this.getDbService();
         const [idsToRemove] = await dbService.getDbCollection(collections.views)
-            .find({_id: viewId})
+            .find(getQueryId(viewId))
             .project({
                 "instances._id": 1,
                 _id: 0
@@ -122,21 +131,20 @@ export class viewsService {
             .toArray();
 
         await dbService.getDbCollection(collections.viewsRoutes)
-            .remove({_id: {$in: idsToRemove.map(item => item._id)}})
+            .remove({"_id.$oid": {$in: idsToRemove.map(item => item._id)}})
     }
 
     async getViewTemplate(viewId) {
         const dbService = await this.getDbService();
-        const result = await dbService.getSingle(collections.viewsTemplates, {_id: viewId});
+        const result = await dbService.getSingle(collections.viewsTemplates, getQueryId(viewId), {_id: 0, html: 1});
         dbService.close();
-        return result;
+        return result.html;
     }
 
     async getView(viewId) {
         const dbService = await this.getDbService();
-        const result = await dbService.getSingle(collections.views, {_id: viewId});
+        const result = await dbService.getSingle(collections.views, getQueryId(viewId));
         dbService.close();
         return result;
     }
-
 }
