@@ -23,7 +23,12 @@ class ViewInstanceRouter {
         return getError(errorTypes.validationError, "argument not exist in body");
     }
 
-//bug dont work
+    @router.put('/')
+    updateInstanceName(params, {viewId, viewInstanceId, viewInstanceName}) {
+        return appInjector.get(appServices.viewInstanceService)
+            .updateViewInstanceStaticData(viewId, viewInstanceId, viewInstanceName);
+    }
+
     @router.delete('/')
     removeViewInstance({viewId, viewInstanceId}) {
         return appInjector.get(appServices.viewInstanceService)

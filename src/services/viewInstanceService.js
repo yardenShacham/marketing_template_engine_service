@@ -61,7 +61,23 @@ export class viewInstanceService {
                     }
                 }, {
                     $project: {
-                        instance: "$instances", route: 1
+                        "viewInstanceId": "$instances._id",
+                        "name": "$instances.name",
+                        "isHasStyles": {
+                            $cond: {
+                                if: {$ifNull: ["$instances.styles", false]},
+                                then: true,
+                                else: false
+                            }
+                        },
+                        "isHasJs": {
+                            $cond: {
+                                if: {$ifNull: ["$instances.js", false]},
+                                then: true,
+                                else: false
+                            }
+                        },
+                        "route": "$route"
                     }
                 }]);
             const instances = await dbService.getAllCursor(cursor);
@@ -101,10 +117,10 @@ export class viewInstanceService {
 
     async updateViewInstanceStaticData(viewId, viewInstanceId, instanceName, styles, js) {
         const query = getInstanceQuery(viewId, viewInstanceId);
-        let action = this.appandToAction(getTemplatesAction(null, styles, js), "$set", "name", instanceName)
+        let action = this.appandToAction(getTemplatesAction(null, styles, js), "$set", "instances.$.name", instanceName)
 
         const dbService = await this.getDbService();
-        const result = dbService.update(collections.views, query, action);
+        const result = await dbService.findAndModify(collections.views, query, action);
         dbService.close();
         return result;
     }
@@ -140,5 +156,6 @@ export class viewInstanceService {
 
     appandToAction(action, actionType, propName, value) {
         action[actionType][propName] = value;
+        return action;
     }
 }
