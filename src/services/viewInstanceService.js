@@ -98,12 +98,20 @@ export class viewInstanceService {
             return content;
         }, {});
         const newInstance = this.getInstanceViewObj(instanceName, null, null, content);
+        const route = this.getDefaultRoute(instanceName);
         await dbService.update(collections.views, getQueryId(viewId), {
             $push: {instances: newInstance}
         });
-        await this.appandRoute(newInstance._id, this.getDefaultRoute(instanceName), dbService);
+
+        await this.appandRoute(newInstance._id, route, dbService);
         dbService.close();
-        return newInstance._id;
+        return {
+            viewInstanceId: newInstance._id,
+            name: newInstance.name,
+            isHasStyles: false,
+            isHasJs: false,
+            route
+        };
     }
 
     async appandRoute(instanceId, route, dbService = null) {
@@ -120,9 +128,8 @@ export class viewInstanceService {
         let action = this.appandToAction(getTemplatesAction(null, styles, js), "$set", "instances.$.name", instanceName)
 
         const dbService = await this.getDbService();
-        const result = await dbService.findAndModify(collections.views, query, action);
+        await dbService.update(collections.views, query, action);
         dbService.close();
-        return result;
     }
 
     async removeInstance(viewId, instanceId) {
@@ -130,6 +137,7 @@ export class viewInstanceService {
         await dbService.removeArrayItemById(collections.views, "instances", getQueryId(viewId), instanceId);
         await dbService.remove(collections.viewsRoutes, getQueryId(instanceId));
         dbService.close();
+        return true;
     }
 
     async getInstance(viewId, instanceId) {

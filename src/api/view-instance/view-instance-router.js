@@ -26,7 +26,9 @@ class ViewInstanceRouter {
     @router.put('/')
     updateInstanceName(params, {viewId, viewInstanceId, viewInstanceName}) {
         return appInjector.get(appServices.viewInstanceService)
-            .updateViewInstanceStaticData(viewId, viewInstanceId, viewInstanceName);
+            .updateViewInstanceStaticData(viewId, viewInstanceId, viewInstanceName).then(() => {
+                return viewInstanceName;
+            });
     }
 
     @router.delete('/')
