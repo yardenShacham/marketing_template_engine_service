@@ -1,7 +1,7 @@
 import {appServices} from '../consts/appServices';
-import {collections} from '../consts/db';
+import {collections, ACTION_TYPES} from '../consts/db';
 import {errors} from '../consts/errors';
-import {kebabCase, difference} from 'lodash';
+import {kebabCase, difference, reduce} from 'lodash';
 import {getTemplateParams} from '../Utils/string';
 import {errorTypes} from '../consts/errors';
 import {getError} from '../api/infra/errorHandler';
@@ -18,7 +18,9 @@ export class viewInstanceService {
     getContentFieldsToUpdate(newHtml, oldHtml = "") {
         const newParams = getTemplateParams(newHtml);
         const oldParams = getTemplateParams(oldHtml);
-        return difference(newParams, oldParams);
+        const a = difference(newParams, oldParams);
+        const b = difference(oldParams, newParams);
+        return a;
     }
 
     async updateContentParams(viewId, newHtml, oldHtml = "") {
@@ -34,6 +36,20 @@ export class viewInstanceService {
                 {$set: fieldsSetAction}, true);
             dbService.close();
         }
+    }
+
+
+    async updateContent(viewId, viewInstanceId, contentParamsToUpdate) {
+        const query = getInstanceQuery(viewId, viewInstanceId);
+        const instanceArrayPointer = "instances.$.content";
+        const action = reduce(contentParamsToUpdate, (updatedContentAction, value, key) => {
+            return this.appandToAction(updatedContentAction, ACTION_TYPES.set,
+                `${instanceArrayPointer}.${key}`, value);
+        }, {[ACTION_TYPES.set]: {}});
+        const dbService = await this.getDbService();
+        const result = await dbService.update(collections.views, query, action);
+        dbService.close();
+        return result;
     }
 
     async getInstances(viewId) {
@@ -97,13 +113,20 @@ export class viewInstanceService {
             content[nextField] = "";
             return content;
         }, {});
+        const route = this.getDefaultRoute(instanceName);
         const newInstance = this.getInstanceViewObj(instanceName, null, null, content);
         await dbService.update(collections.views, getQueryId(viewId), {
             $push: {instances: newInstance}
         });
-        await this.appandRoute(newInstance._id, this.getDefaultRoute(instanceName), dbService);
+        await this.appandRoute(newInstance._id, route, dbService);
         dbService.close();
-        return newInstance._id;
+        return {
+            viewInstanceId: newInstance._id,
+            name: newInstance.name,
+            isHasStyles: false,
+            isHasJs: false,
+            route
+        };
     }
 
     async appandRoute(instanceId, route, dbService = null) {
@@ -117,12 +140,12 @@ export class viewInstanceService {
 
     async updateViewInstanceStaticData(viewId, viewInstanceId, instanceName, styles, js) {
         const query = getInstanceQuery(viewId, viewInstanceId);
-        let action = this.appandToAction(getTemplatesAction(null, styles, js), "$set", "instances.$.name", instanceName)
+        let action = this.appandToAction(getTemplatesAction(null, styles, js), ACTION_TYPES.set, "instances.$.name", instanceName)
 
         const dbService = await this.getDbService();
-        const result = await dbService.findAndModify(collections.views, query, action);
+        await dbService.update(collections.views, query, action);
         dbService.close();
-        return result;
+        return instanceName;
     }
 
     async removeInstance(viewId, instanceId) {
