@@ -75,6 +75,22 @@ export class AppRouter {
         });
     }
 
+    patch(route, status = 200) {
+        return addtionalFunctionalityDecorator((originalFunction) => {
+            this.router.patch(route, async (req, res) => {
+                let result = await originalFunction(req.query, req.body);
+
+                if (result instanceof Error) {
+                    const {status, code} = result.data;
+                    res.status(status).send(code);
+                }
+                else {
+                    res.json(result);
+                }
+            });
+        });
+    }
+
     custom() {
 
     }

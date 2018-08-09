@@ -138,7 +138,7 @@ export class viewsService {
         const dbService = await this.getDbService();
         const result = await dbService.getSingle(collections.viewsTemplates, getQueryId(viewId), {_id: 0, html: 1});
         dbService.close();
-        return result.html;
+        return result || {html: ""};
     }
 
     async getView(viewId) {

@@ -36,6 +36,12 @@ class ViewInstanceRouter {
         return appInjector.get(appServices.viewInstanceService)
             .removeInstance(viewId, viewInstanceId);
     }
+
+    @router.patch('/')
+    updateInstanceContent({viewId, viewInstanceId}, {updateContentParams}) {
+        return appInjector.get(appServices.viewInstanceService)
+            .updateContent(viewId, viewInstanceId, updateContentParams);
+    }
 }
 
 export default router.getRouter();
