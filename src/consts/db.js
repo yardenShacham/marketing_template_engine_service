@@ -5,5 +5,6 @@ export const collections = {
 };
 
 export const ACTION_TYPES = {
-    set: "$set"
+    set: "$set",
+    unset: "$unset"
 };

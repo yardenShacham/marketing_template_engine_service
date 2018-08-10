@@ -1,7 +1,7 @@
 import {appServices} from '../consts/appServices';
 import {collections, ACTION_TYPES} from '../consts/db';
 import {errors} from '../consts/errors';
-import {kebabCase, difference, reduce} from 'lodash';
+import {kebabCase, remove, reduce} from 'lodash';
 import {getTemplateParams} from '../Utils/string';
 import {errorTypes} from '../consts/errors';
 import {getError} from '../api/infra/errorHandler';
@@ -18,20 +18,43 @@ export class viewInstanceService {
     getContentFieldsToUpdate(newHtml, oldHtml = "") {
         const newParams = getTemplateParams(newHtml);
         const oldParams = getTemplateParams(oldHtml);
-        return difference(newParams, oldParams);
+        const oldCopy = [...oldParams];
+        const newCopy = [...newParams];
+        remove(oldCopy, (oldP) => !!newCopy.find(newP => newP === oldP));
+        remove(newParams, (newP) => !!oldParams.find(oldP => oldP === newP));
+
+        return newParams.length < 1 && oldCopy.length < 1 ? null : {
+            paramsToAdd: newParams,
+            paramsToRemove: oldCopy
+        };
     }
 
     async updateContentParams(viewId, newHtml, oldHtml = "") {
-        const differenceParams = this.getContentFieldsToUpdate(newHtml, oldHtml);
-        if (differenceParams && differenceParams.length > 0) {
-            const fieldsSetAction = differenceParams.reduce((fields, nextParam) => {
-                fields[`instances.$[].content.${nextParam}`] = '';
-                return fields;
-            }, {});
-
+        const fieldToUpdate = this.getContentFieldsToUpdate(newHtml, oldHtml);
+        if (fieldToUpdate) {
             const dbService = await this.getDbService();
-            await dbService.update(collections.views, getQueryId(viewId),
-                {$set: fieldsSetAction}, true);
+            const {paramsToAdd, paramsToRemove} = fieldToUpdate;
+            let fieldsSetAction, fieldsRemoveAction;
+            if (paramsToAdd && paramsToAdd.length > 0) {
+                fieldsSetAction = paramsToAdd.reduce((fields, nextParam) => {
+                    fields[`instances.$[].content.${nextParam}`] = '';
+                    return fields;
+                }, {});
+            }
+
+            if (paramsToRemove && paramsToRemove.length > 0) {
+                fieldsRemoveAction = paramsToRemove.reduce((fields, nextParam) => {
+                    fields[`instances.$[].content.${nextParam}`] = "";
+                    return fields;
+                }, {});
+            }
+            let action = {};
+            if (fieldsSetAction)
+                action[ACTION_TYPES.set] = fieldsSetAction;
+            if (fieldsRemoveAction)
+                action[ACTION_TYPES.unset] = fieldsRemoveAction;
+
+            await dbService.update(collections.views, getQueryId(viewId), action, true);
             dbService.close();
         }
     }
@@ -107,7 +130,9 @@ export class viewInstanceService {
     async addNewViewInstance(viewId, instanceName) {
         const dbService = await this.getDbService();
         const htmlTemplate = await appInjector.get(appServices.viewsService).getViewTemplate(viewId);
-        const content = this.getContentFieldsToUpdate(htmlTemplate).reduce((content, nextField) => {
+        const fieldToUpdate = this.getContentFieldsToUpdate(htmlTemplate);
+
+        const content = (fieldToUpdate || []).reduce((content, nextField) => {
             content[nextField] = "";
             return content;
         }, {});
