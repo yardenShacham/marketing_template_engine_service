@@ -59,7 +59,6 @@ export class viewInstanceService {
         }
     }
 
-
     async updateContent(viewId, viewInstanceId, contentParamsToUpdate) {
         const query = getInstanceQuery(viewId, viewInstanceId);
         const instanceArrayPointer = "instances.$.content";
@@ -141,7 +140,7 @@ export class viewInstanceService {
         await dbService.update(collections.views, getQueryId(viewId), {
             $push: {instances: newInstance}
         });
-        await this.appandRoute(newInstance._id, route, dbService);
+        await this.appandRoute(newInstance._id, route, false);
         dbService.close();
         return {
             viewInstanceId: newInstance._id,
@@ -152,10 +151,13 @@ export class viewInstanceService {
         };
     }
 
-    async appandRoute(instanceId, route, dbService = null) {
-        const service = dbService || this.getDbService();
-        const result = await service.insert(collections.viewsRoutes, {_id: instanceId, route}, {upsert: true});
-        if (!dbService)
+    async appandRoute(instanceId, route, isSelfDispose = true) {
+        const service = await this.getDbService();
+        const result = await service.save(collections.viewsRoutes, {
+            _id: isSelfDispose ? getObjectId(instanceId) : instanceId,
+            route
+        });
+        if (isSelfDispose)
             service.close();
 
         return result;

@@ -31,6 +31,14 @@ class ViewInstanceRouter {
             });
     }
 
+    @router.put('/route')
+    updateRoute(params, {viewInstanceId, newRoute}) {
+        return appInjector.get(appServices.viewInstanceService)
+            .appandRoute(viewInstanceId, newRoute).then(() => {
+                return newRoute;
+            });
+    }
+
     @router.delete('/')
     removeViewInstance({viewId, viewInstanceId}) {
         return appInjector.get(appServices.viewInstanceService)

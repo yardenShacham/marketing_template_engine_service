@@ -115,6 +115,11 @@ export class dbService {
             : await collection.findOneAndUpdate(query, update, options);
     }
 
+    async save(collectionName, doc) {
+        const collection = this.db.collection(collectionName);
+        return await collection.save(doc);
+    }
+
     async getSingleFromCursor(cursor) {
         let result = null;
         if (await cursor.hasNext()) {
