@@ -1,8 +1,7 @@
 import {appServices} from '../consts/appServices';
 import {collections, ACTION_TYPES} from '../consts/db';
-import {errors} from '../consts/errors';
-import {kebabCase, remove, reduce} from 'lodash';
-import {getTemplateParams} from '../Utils/string';
+import {isEmptyObject} from '../Utils/object';
+import {kebabCase, forEach, reduce} from 'lodash';
 import {errorTypes} from '../consts/errors';
 import {getError} from '../api/infra/errorHandler';
 import {getInstanceQuery, getTemplatesAction, getQueryId, getObjectId} from '../Utils/db';
@@ -16,16 +15,32 @@ export class viewInstanceService {
     }
 
     getContentFieldsToUpdate(newHtml, oldHtml = "") {
-        const newParams = getTemplateParams(newHtml);
-        const oldParams = getTemplateParams(oldHtml);
-        const oldCopy = [...oldParams];
-        const newCopy = [...newParams];
-        remove(oldCopy, (oldP) => !!newCopy.find(newP => newP === oldP));
-        remove(newParams, (newP) => !!oldParams.find(oldP => oldP === newP));
-
-        return newParams.length < 1 && oldCopy.length < 1 ? null : {
-            paramsToAdd: newParams,
-            paramsToRemove: oldCopy
+        const paramsToAdd = [], paramsToRemove = [], paramsTypeToUpdate = [];
+        const newParams = appInjector.get(appServices.templateEngineService).getContentParams(newHtml);
+        const oldParams = appInjector.get(appServices.templateEngineService).getContentParams(oldHtml);
+        forEach(newParams, (val, paramName) => {
+            if (!oldParams[paramName]) {
+                paramsToAdd.push({
+                    paramName,
+                    value: newParams[paramName]
+                });
+            }
+            else if (oldParams[paramName] && oldParams[paramName].type !== newParams[paramName].type) {
+                paramsTypeToUpdate.push({
+                    paramName,
+                    type: newParams[paramName].type
+                });
+            }
+        });
+        forEach(oldParams, (val, paramName) => {
+            if (!newParams[paramName]) {
+                paramsToRemove.push(paramName);
+            }
+        });
+        return paramsToAdd.length < 1 && paramsToRemove.length < 1 && paramsTypeToUpdate.length < 1 ? null : {
+            paramsToAdd,
+            paramsToRemove,
+            paramsTypeToUpdate
         };
     }
 
@@ -33,25 +48,30 @@ export class viewInstanceService {
         const fieldToUpdate = this.getContentFieldsToUpdate(newHtml, oldHtml);
         if (fieldToUpdate) {
             const dbService = await this.getDbService();
-            const {paramsToAdd, paramsToRemove} = fieldToUpdate;
-            let fieldsSetAction, fieldsRemoveAction;
+            const {paramsToAdd, paramsToRemove, paramsTypeToUpdate} = fieldToUpdate;
+            let fieldsSetAction = {}, fieldsRemoveAction = {};
             if (paramsToAdd && paramsToAdd.length > 0) {
                 fieldsSetAction = paramsToAdd.reduce((fields, nextParam) => {
-                    fields[`instances.$[].content.${nextParam}`] = '';
+                    fields[`instances.$[].content.${nextParam.paramName}`] = nextParam.value;
                     return fields;
-                }, {});
+                }, fieldsSetAction);
             }
-
+            if (paramsTypeToUpdate) {
+                fieldsSetAction = paramsToAdd.reduce((fields, nextParam) => {
+                    fields[`instances.$[].content.${nextParam.paramName}.type`] = nextParam.type;
+                    return fields;
+                }, fieldsSetAction);
+            }
             if (paramsToRemove && paramsToRemove.length > 0) {
                 fieldsRemoveAction = paramsToRemove.reduce((fields, nextParam) => {
                     fields[`instances.$[].content.${nextParam}`] = "";
                     return fields;
-                }, {});
+                }, fieldsRemoveAction);
             }
             let action = {};
-            if (fieldsSetAction)
+            if (!isEmptyObject(fieldsSetAction))
                 action[ACTION_TYPES.set] = fieldsSetAction;
-            if (fieldsRemoveAction)
+            if (!isEmptyObject(fieldsRemoveAction))
                 action[ACTION_TYPES.unset] = fieldsRemoveAction;
 
             await dbService.update(collections.views, getQueryId(viewId), action, true);
@@ -64,7 +84,7 @@ export class viewInstanceService {
         const instanceArrayPointer = "instances.$.content";
         const action = reduce(contentParamsToUpdate, (updatedContentAction, value, key) => {
             return this.appandToAction(updatedContentAction, ACTION_TYPES.set,
-                `${instanceArrayPointer}.${key}`, value);
+                `${instanceArrayPointer}.${key}.data`, value);
         }, {[ACTION_TYPES.set]: {}});
         const dbService = await this.getDbService();
         const result = await dbService.update(collections.views, query, action);

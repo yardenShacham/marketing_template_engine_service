@@ -7,7 +7,7 @@ const router = new AppRouter();
 class ViewRouter {
 
     @router.get('/')
-    getViews(req) {
+    getViews() {
         return appInjector.get(appServices.viewsService).getAllViews();
     }
 

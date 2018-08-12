@@ -14,7 +14,7 @@ export class AppRouter {
     get(route) {
         return addtionalFunctionalityDecorator((originalFunction) => {
             this.router.get(route, async (req, res) => {
-                let result = await originalFunction(req.query);
+                let result = await originalFunction(req.params, req.query);
 
                 if (result instanceof Error) {
                     const {status, code} = result.data;
