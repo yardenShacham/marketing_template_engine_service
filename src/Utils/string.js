@@ -12,4 +12,4 @@ export const getTemplateParams = (htmlTemplate) => {
     }
 
     return params;
-}
+};
