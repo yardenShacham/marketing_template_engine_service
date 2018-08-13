@@ -9,21 +9,20 @@ import {templateSettings, reduce, template} from 'lodash';
 
 export class templateEngineService {
 
-    contentParamsRegex = /{{([\s\S]+?)}}/gm;
-
     constructor() {
+        this.contentParamsRegex = /{{([\s\S]+?)}}/gm;
         templateSettings.interpolate = this.getContentParamsRegex;
     }
 
     getContentParams(template) {
-        return getTemplateParams(template).reduce((contentParams, nextParam) => {
+        return this.getTemplateParamsList(template).reduce((contentParams, nextParam) => {
             const [propName, type] = nextParam.split(':');
             contentParams[propName] = {
                 type: ELEMENT_TYPES_TO_CODES[type],
                 data: this.getContentInitData(type)
             };
             return contentParams;
-        });
+        }, {});
     }
 
     compile(contentParams, mteTemplate, isPreview) {
@@ -40,7 +39,7 @@ export class templateEngineService {
         return null;
     }
 
-    getTemplateParamsList = (template) => {
+    getTemplateParamsList(template) {
         let params = [];
         let prop = "";
         while (prop !== null) {

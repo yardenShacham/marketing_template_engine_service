@@ -54,9 +54,19 @@ export class dbService {
     }
 
 
-    async getSingle(collectionName, query, projection) {
+    async getSingle(collectionName, query, projectionFields = {}, projection = {}) {
+        let fullProjection = {};
+        if (!isEmpty(projectionFields)) {
+            fullProjection = Object.assign(fullProjection, {fields: projectionFields});
+        }
+        if (!isEmpty(projection)) {
+            fullProjection = Object.assign(fullProjection, projection);
+        }
+        if (isEmpty(fullProjection))
+            fullProjection = null;
+
         return await this.db.collection(collectionName)
-            .findOne(query || {}, projection ? {fields: projection} : null);
+            .findOne(query || {}, fullProjection);
     }
 
     async removeById(collectionName, docId) {

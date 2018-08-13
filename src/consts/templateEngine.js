@@ -24,5 +24,5 @@ export const ELEMENT_TYPES_TO_DATA_PREVIEW = {
 };
 
 export const TYPE_TO_DATA = {
-    [ELEMENT_TYPES.list]: []
+    [ELEMENT_TYPES_TO_CODES.list]: []
 };

@@ -54,23 +54,31 @@ export class viewsService {
 
     async appendHtmlTemplate(viewId, html) {
         const dbService = await this.getDbService();
-        const viewInfo = await dbService.getSingle(collections.views, getQueryId(viewId), {
-            instances: 0
-        });
-        if (viewInfo.hasHtmlTemplate) {
-            await this.updateViewTemplate(viewId, html);
+        const cursor = dbService
+            .aggregate(collections.views, [{
+                $match: getQueryId(viewId)
+            }, {
+                $project: {
+                    "totalInstances": {$size: "$instances"},
+                    hasHtmlTemplate: 1, name: 1
+                }
+            }]);
+
+        const {hasHtmlTemplate, name, totalInstances} = await dbService.getSingleFromCursor(cursor) || {};
+        if (hasHtmlTemplate) {
+            await this.updateViewTemplate(viewId, {htmlTemplate: html}, totalInstances);
         }
         else {
-            await this.appendNewViewTemplate(viewId, html);
+            await this.appendNewViewTemplate(viewId, {htmlTemplate: html}, totalInstances);
         }
         return {
-            viewId: viewInfo._id,
-            name: viewInfo.name,
+            viewId,
+            name,
             hasHtmlTemplate: true
         };
     }
 
-    async appendNewViewTemplate(viewId, htmlTemplate, css, js) {
+    async appendNewViewTemplate(viewId, {htmlTemplate, css, js}, totalInstances) {
         const dbService = await this.getDbService();
         await dbService.insert(collections.viewsTemplates, {
             _id: getObjectId(viewId),
@@ -78,20 +86,23 @@ export class viewsService {
             css: css || null,
             js: js || null
         });
-        await appInjector.get(appServices.viewInstanceService)
-            .updateContentParams(viewId, htmlTemplate);
+        if (totalInstances > 0) {
+            await appInjector.get(appServices.viewInstanceService)
+                .updateContentParams(viewId, htmlTemplate);
+        }
         await dbService.update(collections.views, getQueryId(viewId), {$set: {hasHtmlTemplate: true}});
         dbService.close();
     }
 
-    async updateViewTemplate(viewId, htmlTemplate, css, js) {
+    async updateViewTemplate(viewId, {htmlTemplate, css, js}, totalInstances) {
         const dbService = await this.getDbService();
         const {html} = await this.getViewTemplate(viewId);
         await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction(htmlTemplate, css, js));
-        await appInjector.get(appServices.viewInstanceService)
-            .updateContentParams(viewId, htmlTemplate, html);
+        if (totalInstances > 0) {
+            await appInjector.get(appServices.viewInstanceService)
+                .updateContentParams(viewId, htmlTemplate, html);
+        }
         dbService.close();
-        return true;
     }
 
     async getAllViews() {

@@ -17,38 +17,42 @@ export class viewInstanceService {
     getContentFieldsToUpdate(newHtml, oldHtml = "") {
         const paramsToAdd = [], paramsToRemove = [], paramsTypeToUpdate = [];
         const newParams = appInjector.get(appServices.templateEngineService).getContentParams(newHtml);
-        const oldParams = appInjector.get(appServices.templateEngineService).getContentParams(oldHtml);
-        forEach(newParams, (val, paramName) => {
-            if (!oldParams[paramName]) {
-                paramsToAdd.push({
-                    paramName,
-                    value: newParams[paramName]
-                });
-            }
-            else if (oldParams[paramName] && oldParams[paramName].type !== newParams[paramName].type) {
-                paramsTypeToUpdate.push({
-                    paramName,
-                    type: newParams[paramName].type
-                });
-            }
-        });
-        forEach(oldParams, (val, paramName) => {
-            if (!newParams[paramName]) {
-                paramsToRemove.push(paramName);
-            }
-        });
-        return paramsToAdd.length < 1 && paramsToRemove.length < 1 && paramsTypeToUpdate.length < 1 ? null : {
-            paramsToAdd,
-            paramsToRemove,
-            paramsTypeToUpdate
-        };
+        if (oldHtml) {
+            const oldParams = appInjector.get(appServices.templateEngineService).getContentParams(oldHtml);
+            forEach(newParams, (value, paramName) => {
+                if (!oldParams[paramName]) {
+                    paramsToAdd.push({
+                        paramName,
+                        value
+                    });
+                }
+                else if (oldParams[paramName] && oldParams[paramName].type !== value.type) {
+                    paramsTypeToUpdate.push({
+                        paramName,
+                        type: value.type
+                    });
+                }
+            });
+            forEach(oldParams, (val, paramName) => {
+                if (!newParams[paramName]) {
+                    paramsToRemove.push(paramName);
+                }
+            });
+            return paramsToAdd.length < 1 && paramsToRemove.length < 1 && paramsTypeToUpdate.length < 1 ? null : {
+                paramsToAdd,
+                paramsToRemove,
+                paramsTypeToUpdate
+            };
+        }
+
+        return newParams;
     }
 
     async updateContentParams(viewId, newHtml, oldHtml = "") {
-        const fieldToUpdate = this.getContentFieldsToUpdate(newHtml, oldHtml);
-        if (fieldToUpdate) {
+        const fieldActions = this.getContentFieldsToUpdate(newHtml, oldHtml);
+        if (fieldActions) {
             const dbService = await this.getDbService();
-            const {paramsToAdd, paramsToRemove, paramsTypeToUpdate} = fieldToUpdate;
+            const {paramsToAdd, paramsToRemove, paramsTypeToUpdate} = fieldActions;
             let fieldsSetAction = {}, fieldsRemoveAction = {};
             if (paramsToAdd && paramsToAdd.length > 0) {
                 fieldsSetAction = paramsToAdd.reduce((fields, nextParam) => {
@@ -56,8 +60,8 @@ export class viewInstanceService {
                     return fields;
                 }, fieldsSetAction);
             }
-            if (paramsTypeToUpdate) {
-                fieldsSetAction = paramsToAdd.reduce((fields, nextParam) => {
+            if (paramsTypeToUpdate.length > 0) {
+                fieldsSetAction = paramsTypeToUpdate.reduce((fields, nextParam) => {
                     fields[`instances.$[].content.${nextParam.paramName}.type`] = nextParam.type;
                     return fields;
                 }, fieldsSetAction);
@@ -148,27 +152,24 @@ export class viewInstanceService {
 
     async addNewViewInstance(viewId, instanceName) {
         const dbService = await this.getDbService();
-        const htmlTemplate = await appInjector.get(appServices.viewsService).getViewTemplate(viewId);
-        const fieldToUpdate = this.getContentFieldsToUpdate(htmlTemplate);
-
-        const content = (fieldToUpdate || []).reduce((content, nextField) => {
-            content[nextField] = "";
-            return content;
-        }, {});
-        const route = this.getDefaultRoute(instanceName);
-        const newInstance = this.getInstanceViewObj(instanceName, null, null, content);
-        await dbService.update(collections.views, getQueryId(viewId), {
-            $push: {instances: newInstance}
-        });
-        await this.appandRoute(newInstance._id, route, false);
-        dbService.close();
-        return {
-            viewInstanceId: newInstance._id,
-            name: newInstance.name,
-            isHasStyles: false,
-            isHasJs: false,
-            route
-        };
+        const {html} = await appInjector.get(appServices.viewsService).getViewTemplate(viewId);
+        const contentFields = this.getContentFieldsToUpdate(html);
+        if (!isEmptyObject(contentFields)) {
+            const route = this.getDefaultRoute(instanceName);
+            const newInstance = this.getInstanceViewObj(instanceName, null, null, contentFields);
+            await dbService.update(collections.views, getQueryId(viewId), {
+                $push: {instances: newInstance}
+            });
+            await this.appandRoute(newInstance._id, route, false);
+            dbService.close();
+            return {
+                viewInstanceId: newInstance._id,
+                name: newInstance.name,
+                isHasStyles: false,
+                isHasJs: false,
+                route
+            };
+        }
     }
 
     async appandRoute(instanceId, route, isSelfDispose = true) {
