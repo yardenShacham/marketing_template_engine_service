@@ -5,16 +5,16 @@ import {
     ELEMENT_TYPES_TO_DATA_PREVIEW,
     ELEMENT_TYPES_TO_DATA
 } from '../consts/templateEngine';
-import {templateSettings, reduce, template} from 'lodash';
+import {replaceTemplateParams} from '../Utils/string';
+import {reduce} from 'lodash';
 
 export class templateEngineService {
 
     constructor() {
-        this.contentParamsRegex = /{{([\s\S]+?)}}/gm;
-        templateSettings.interpolate = this.getContentParamsRegex;
+        this.contentParamsRegex = "{{param}}";
     }
 
-    getContentParams(template) {
+    compileToContentParams(template) {
         return this.getTemplateParamsList(template).reduce((contentParams, nextParam) => {
             const [propName, type] = nextParam.split(':');
             contentParams[propName] = {
@@ -27,13 +27,14 @@ export class templateEngineService {
 
     compile(contentParams, mteTemplate, isPreview) {
         if (contentParams && mteTemplate) {
-            const templateParams = reduce(contentParams, (templateParams, nextParamName, nextParamValue) => {
+            const templateParams = reduce(contentParams, (templateParams, nextParamValue, nextParamName) => {
                 const {type: typeCode, data} = nextParamValue;
                 templateParams[`${nextParamName}:${CODES_TO_ELEMENT_TYPES[typeCode]}`] = isPreview ?
                     this.getPreviewDataByType(nextParamName, typeCode, data) : getDataByType(nextParamName, typeCode, data);
+                return templateParams;
             }, {});
 
-            return template(mteTemplate)(templateParams);
+            return replaceTemplateParams(templateParams, mteTemplate, this.contentParamsRegex);
         }
 
         return null;

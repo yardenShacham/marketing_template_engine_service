@@ -16,9 +16,9 @@ export class viewInstanceService {
 
     getContentFieldsToUpdate(newHtml, oldHtml = "") {
         const paramsToAdd = [], paramsToRemove = [], paramsTypeToUpdate = [];
-        const newParams = appInjector.get(appServices.templateEngineService).getContentParams(newHtml);
+        const newParams = appInjector.get(appServices.templateEngineService).compileToContentParams(newHtml);
         if (oldHtml) {
-            const oldParams = appInjector.get(appServices.templateEngineService).getContentParams(oldHtml);
+            const oldParams = appInjector.get(appServices.templateEngineService).compileToContentParams(oldHtml);
             forEach(newParams, (value, paramName) => {
                 if (!oldParams[paramName]) {
                     paramsToAdd.push({
@@ -202,12 +202,15 @@ export class viewInstanceService {
         return true;
     }
 
-    async getInstance(viewId, instanceId) {
+    async getInstanceContentParams(viewId, instanceId) {
         const query = getInstanceQuery(viewId, instanceId);
         const dbService = await this.getDbService();
-        const result = await dbService.getSingle(collections.views, query);
+        const {instances} = await dbService.getSingle(collections.views, query, {
+            _id: 0,
+            "instances.content": 1
+        });
         dbService.close();
-        return result;
+        return instances[0].content;
     }
 
     getInstanceViewObj(instanceName, styles, js, content = {}) {
