@@ -1,5 +1,6 @@
 import {addtionalFunctionalityDecorator} from '../../Utils/decorators';
 import {Router} from 'express';
+import {isEmpty} from 'lodash';
 
 export class AppRouter {
 
@@ -30,7 +31,13 @@ export class AppRouter {
     post(route) {
         return addtionalFunctionalityDecorator((originalFunction) => {
             this.router.post(route, async (req, res) => {
-                let result = await originalFunction(req.body);
+
+                let result = null;
+                if (!isEmpty(req.params))
+                    result = await originalFunction(req.params, req.body);
+                else {
+                    result = await originalFunction(req.body);
+                }
 
                 if (result instanceof Error) {
                     const {status, code} = result.data;

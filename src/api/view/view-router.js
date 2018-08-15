@@ -21,10 +21,25 @@ class ViewRouter {
         return appInjector.get(appServices.viewsService).removeView(viewId);
     }
 
-    @router.post('/viewTemplate')
-    appendHtmlTemplate({viewId, htmlTemplate}) {
+    @router.post('/:viewId/viewTemplate')
+    appendHtmlTemplate({viewId}, {htmlTemplate}) {
         return appInjector.get(appServices.viewsService)
             .appendHtmlTemplate(viewId, htmlTemplate);
+    }
+
+    @router.post('/:viewId/viewStyles')
+    appendStyles({viewId}, {styles}) {
+        return appInjector.get(appServices.viewsService).appendStyle(viewId, styles);
+    }
+
+    @router.post('/:viewId/viewBehavior')
+    appendJs({viewId}, {js}) {
+        return appInjector.get(appServices.viewsService).appendJs(viewId, js);
+    }
+
+    @router.get('/:viewId/styles')
+    getViewStyles({viewId}) {
+        return appInjector.get(appServices.viewsService).getViewStyles(viewId);
     }
 
     @router.put('/:viewId')

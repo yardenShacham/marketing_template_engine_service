@@ -186,7 +186,7 @@ export class viewInstanceService {
 
     async updateViewInstanceStaticData(viewId, viewInstanceId, instanceName, styles, js) {
         const query = getInstanceQuery(viewId, viewInstanceId);
-        let action = this.appandToAction(getTemplatesAction(null, styles, js), ACTION_TYPES.set, "instances.$.name", instanceName)
+        let action = this.appandToAction(getTemplatesAction({styles, js}), ACTION_TYPES.set, "instances.$.name", instanceName)
 
         const dbService = await this.getDbService();
         await dbService.update(collections.views, query, action);

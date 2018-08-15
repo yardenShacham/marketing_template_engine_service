@@ -8,7 +8,7 @@ const router = new AppRouter();
 
 class ViewInstanceRouter {
 
-    @router.get('/')
+    @router.get('/:viewId')
     getAllViewInstances({viewId}) {
         return appInjector.get(appServices.viewInstanceService).getInstances(viewId);
     }

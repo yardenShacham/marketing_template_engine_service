@@ -11,7 +11,7 @@ import {reduce} from 'lodash';
 export class templateEngineService {
 
     constructor() {
-        this.contentParamsRegex = "{{param}}";
+        this.contentParamsRegex = /{{([\s\S]+?)}}/gm;
     }
 
     compileToContentParams(template) {
@@ -34,7 +34,7 @@ export class templateEngineService {
                 return templateParams;
             }, {});
 
-            return replaceTemplateParams(templateParams, mteTemplate, this.contentParamsRegex);
+            return replaceTemplateParams(templateParams, mteTemplate, "{{param}}");
         }
 
         return null;

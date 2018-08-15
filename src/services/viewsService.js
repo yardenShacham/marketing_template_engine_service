@@ -16,6 +16,8 @@ export class viewsService {
         const newViewId = await dbService.insert(collections.views, {
             name: viewName,
             hasHtmlTemplate: false,
+            hasStyles: false,
+            hasJs: false,
             instances: []
         });
         dbService.close();
@@ -24,6 +26,8 @@ export class viewsService {
                 viewId: newViewId,
                 name: viewName,
                 hasHtmlTemplate: false,
+                hasStyles: false,
+                hasJs: false,
                 instances: []
             };
         }
@@ -42,6 +46,8 @@ export class viewsService {
                     viewId: value._id,
                     name: viewName,
                     hasHtmlTemplate: value.hasHtmlTemplate,
+                    hasStyles: value.hasStyles,
+                    hasJs: value.hasJs
                 };
             }
             return getError(errorTypes.generalError);
@@ -60,31 +66,33 @@ export class viewsService {
             }, {
                 $project: {
                     "totalInstances": {$size: "$instances"},
-                    hasHtmlTemplate: 1, name: 1
+                    hasHtmlTemplate: 1, hasStyles: 1, hasJs: 1, name: 1
                 }
             }]);
 
-        const {hasHtmlTemplate, name, totalInstances} = await dbService.getSingleFromCursor(cursor) || {};
+        const {hasHtmlTemplate, hasStyles, hasJs, name, totalInstances} = await dbService.getSingleFromCursor(cursor) || {};
         if (hasHtmlTemplate) {
-            await this.updateViewTemplate(viewId, {htmlTemplate: html}, totalInstances);
+            await this.updateViewHtmlTemplate(viewId, html, totalInstances);
         }
         else {
-            await this.appendNewViewTemplate(viewId, {htmlTemplate: html}, totalInstances);
+            await this.appendNewViewTemplate(viewId, html, totalInstances);
         }
         return {
             viewId,
             name,
-            hasHtmlTemplate: true
+            hasHtmlTemplate: true,
+            hasStyles,
+            hasJs
         };
     }
 
-    async appendNewViewTemplate(viewId, {htmlTemplate, css, js}, totalInstances) {
+    async appendNewViewTemplate(viewId, htmlTemplate, totalInstances) {
         const dbService = await this.getDbService();
         await dbService.insert(collections.viewsTemplates, {
             _id: getObjectId(viewId),
             html: htmlTemplate,
-            css: css || null,
-            js: js || null
+            styles: null,
+            js: null
         });
         if (totalInstances > 0) {
             await appInjector.get(appServices.viewInstanceService)
@@ -94,10 +102,10 @@ export class viewsService {
         dbService.close();
     }
 
-    async updateViewTemplate(viewId, {htmlTemplate, css, js}, totalInstances) {
+    async updateViewHtmlTemplate(viewId, htmlTemplate, totalInstances) {
         const dbService = await this.getDbService();
         const {html} = await this.getViewTemplate(viewId);
-        await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction(htmlTemplate, css, js));
+        await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction({htmlTemplate}));
         if (totalInstances > 0) {
             await appInjector.get(appServices.viewInstanceService)
                 .updateContentParams(viewId, htmlTemplate, html);
@@ -105,12 +113,34 @@ export class viewsService {
         dbService.close();
     }
 
+    async appendStyle(viewId, styles) {
+        const dbService = await this.getDbService();
+        await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction({styles}));
+        await dbService.update(collections.views, getQueryId(viewId), {$set: {hasStyles: true}});
+        dbService.close();
+        return {
+            hasStyles: true
+        };
+    }
+
+    async appendJs(viewId, js) {
+        const dbService = await this.getDbService();
+        await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction({js}));
+        await dbService.update(collections.views, getQueryId(viewId), {$set: {hasJs: true}});
+        dbService.close();
+        return {
+            hasJs: true
+        };
+    }
+
     async getAllViews() {
         const dbService = await this.getDbService();
         const result = await dbService.getAndMap(collections.views, (view) => ({
             viewId: view._id,
             name: view.name,
-            hasHtmlTemplate: view.hasHtmlTemplate
+            hasHtmlTemplate: view.hasHtmlTemplate,
+            hasStyles: view.hasStyles,
+            hasJs: view.hasJs
         }));
 
         dbService.close();
@@ -152,10 +182,10 @@ export class viewsService {
         return result || {html: ""};
     }
 
-    async getView(viewId) {
+    async getViewStyles(viewId) {
         const dbService = await this.getDbService();
-        const result = await dbService.getSingle(collections.views, getQueryId(viewId));
+        const result = await dbService.getSingle(collections.viewsTemplates, getQueryId(viewId), {_id: 0, styles: 1});
         dbService.close();
-        return result;
+        return result.styles || {styles: ""};
     }
 }
