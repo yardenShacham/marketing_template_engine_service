@@ -1,15 +1,15 @@
 export const ELEMENT_TYPES_TO_CODES = {
-    container: "CONTAINER",
-    image: "img",
-    text: "TEXT",
-    list: "Array"
+    container: 1,
+    image: 2,
+    text: 3,
+    list: 4
 };
 
 export const CODES_TO_ELEMENT_TYPES = {
-    CONTAINER: "container",
-    img: "image",
-    TEXT: "text",
-    Array: "list"
+    1: "container",
+    2: "image",
+    3: "text",
+    4: "list"
 };
 
 export const ELEMENT_TYPES_TO_DATA = {
@@ -18,9 +18,9 @@ export const ELEMENT_TYPES_TO_DATA = {
     [ELEMENT_TYPES_TO_CODES.image]: (propName, data) => `<img class='${propName}' src="${data}" />`
 };
 export const ELEMENT_TYPES_TO_DATA_PREVIEW = {
-    [ELEMENT_TYPES_TO_CODES.container]: (propName, data) => `<div class='${`${propName}-conatiner`}'>${data}</div>`,
-    [ELEMENT_TYPES_TO_CODES.text]: (propName, data) => `<div class='${`${propName}-text`}'>${data}</div>`,
-    [ELEMENT_TYPES_TO_CODES.image]: (propName, data) => `<div class='${`${propName}-image`}'>${data}</div>`
+    [ELEMENT_TYPES_TO_CODES.container]: (propName, data) => `<div class='${`${propName}:${ELEMENT_TYPES_TO_CODES.container}`}'>${data}</div>`,
+    [ELEMENT_TYPES_TO_CODES.text]: (propName, data) => `<div class='${`${propName}:${ELEMENT_TYPES_TO_CODES.text}`}'>${data}</div>`,
+    [ELEMENT_TYPES_TO_CODES.image]: (propName, data) => `<div class='${`${propName}:${ELEMENT_TYPES_TO_CODES.image}`}'>${data}</div>`
 };
 
 export const TYPE_TO_DATA = {
