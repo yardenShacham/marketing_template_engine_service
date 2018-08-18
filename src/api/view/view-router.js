@@ -29,7 +29,7 @@ class ViewRouter {
 
     @router.post('/:viewId/viewStyles')
     appendStyles({viewId}, {styles}) {
-        return appInjector.get(appServices.viewsService).appendStyle(viewId, styles);
+        return appInjector.get(appServices.viewsService).appendStyles(viewId, styles);
     }
 
     @router.post('/:viewId/viewBehavior')

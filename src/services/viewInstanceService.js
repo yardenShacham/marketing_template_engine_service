@@ -3,6 +3,7 @@ import {collections, ACTION_TYPES} from '../consts/db';
 import {isEmptyObject} from '../Utils/object';
 import {kebabCase, forEach, reduce} from 'lodash';
 import {errorTypes} from '../consts/errors';
+import {DEFAULT_DATA_BY_TYPE} from '../consts/instances';
 import {getError} from '../api/infra/errorHandler';
 import {getInstanceQuery, getTemplatesAction, getQueryId, getObjectId} from '../Utils/db';
 import {appInjector} from '../app-injector'
@@ -21,6 +22,7 @@ export class viewInstanceService {
             const oldParams = appInjector.get(appServices.templateEngineService).compileToContentParams(oldHtml);
             forEach(newParams, (value, paramName) => {
                 if (!oldParams[paramName]) {
+                    value.data = DEFAULT_DATA_BY_TYPE[value.type](paramName);
                     paramsToAdd.push({
                         paramName,
                         value
@@ -186,7 +188,10 @@ export class viewInstanceService {
 
     async updateViewInstanceStaticData(viewId, viewInstanceId, instanceName, styles, js) {
         const query = getInstanceQuery(viewId, viewInstanceId);
-        let action = this.appandToAction(getTemplatesAction({styles, js}), ACTION_TYPES.set, "instances.$.name", instanceName)
+        let action = this.appandToAction(getTemplatesAction({
+            styles,
+            js
+        }), ACTION_TYPES.set, "instances.$.name", instanceName)
 
         const dbService = await this.getDbService();
         await dbService.update(collections.views, query, action);

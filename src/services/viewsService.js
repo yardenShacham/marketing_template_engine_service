@@ -66,12 +66,15 @@ export class viewsService {
             }, {
                 $project: {
                     "totalInstances": {$size: "$instances"},
-                    hasHtmlTemplate: 1, hasStyles: 1, hasJs: 1, name: 1
+                    hasStyles: 1, hasJs: 1, name: 1
                 }
             }]);
-
-        const {hasHtmlTemplate, hasStyles, hasJs, name, totalInstances} = await dbService.getSingleFromCursor(cursor) || {};
-        if (hasHtmlTemplate) {
+        const isExist = await dbService.getSingle(collections.viewsTemplates,
+            getQueryId(viewId), {
+                _id: 1
+            });
+        const {hasStyles, hasJs, name, totalInstances} = await dbService.getSingleFromCursor(cursor) || {};
+        if (isExist) {
             await this.updateViewHtmlTemplate(viewId, html, totalInstances);
         }
         else {
@@ -113,14 +116,37 @@ export class viewsService {
         dbService.close();
     }
 
-    async appendStyle(viewId, styles) {
+    async appendStyles(viewId, styles) {
         const dbService = await this.getDbService();
-        await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction({styles}));
+        const isExist = await dbService.getSingle(collections.viewsTemplates, getQueryId(viewId), {
+            _id: 1
+        });
+        isExist ? await this.updateStyle(viewId, styles) : await this.appendNewStyle(viewId, styles);
+
+        return {hasStyles: true};
+    }
+
+    async appendNewStyle(viewId, styles) {
+        const dbService = await this.getDbService();
+        const compiledStyles = appInjector.get(appServices.templateEngineService)
+            .compileStyles(styles);
+        await dbService.insert(collections.viewsTemplates, {
+            _id: getObjectId(viewId),
+            html: null,
+            styles: compiledStyles,
+            js: null
+        });
         await dbService.update(collections.views, getQueryId(viewId), {$set: {hasStyles: true}});
         dbService.close();
-        return {
-            hasStyles: true
-        };
+    }
+
+    async updateStyle(viewId, styles) {
+        const dbService = await this.getDbService();
+        const compiledStyles = appInjector.get(appServices.templateEngineService)
+            .compileStyles(styles);
+        await dbService.update(collections.viewsTemplates, getQueryId(viewId), getTemplatesAction({styles: compiledStyles}));
+        await dbService.update(collections.views, getQueryId(viewId), {$set: {hasStyles: true}});
+        dbService.close();
     }
 
     async appendJs(viewId, js) {

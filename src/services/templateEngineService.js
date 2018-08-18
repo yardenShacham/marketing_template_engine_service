@@ -1,10 +1,10 @@
 import {
     ELEMENT_TYPES_TO_CODES,
     CODES_TO_ELEMENT_TYPES,
-    TYPE_TO_DATA,
-    ELEMENT_TYPES_TO_DATA_PREVIEW,
-    ELEMENT_TYPES_TO_DATA
+    ELEMENT_TYPES_TO_CONTENT_PREVIEW,
+    ELEMENT_TYPES_TO_CONTENT
 } from '../consts/templateEngine';
+import {DEFAULT_DATA_BY_TYPE} from '../consts/instances';
 import {replaceTemplateParams} from '../Utils/string';
 import {reduce} from 'lodash';
 
@@ -17,12 +17,17 @@ export class templateEngineService {
     compileToContentParams(template) {
         return this.getTemplateParamsList(template).reduce((contentParams, nextParam) => {
             const [propName, type] = nextParam.split(':');
+            const typeCode = ELEMENT_TYPES_TO_CODES[type];
             contentParams[propName] = {
-                type: ELEMENT_TYPES_TO_CODES[type],
-                data: this.getContentInitData(type)
+                type: typeCode,
+                data: DEFAULT_DATA_BY_TYPE[typeCode](propName)
             };
             return contentParams;
         }, {});
+    }
+
+    compileStyles(styles) {
+        return replaceTemplateParams(ELEMENT_TYPES_TO_CODES, styles, "{{param}}");
     }
 
     compile(contentParams, mteTemplate, isPreview) {
@@ -52,15 +57,11 @@ export class templateEngineService {
         return params;
     };
 
-    getContentInitData(type) {
-        return TYPE_TO_DATA[type] || "";
-    }
-
     getPreviewDataByType(paramName, paramTypeCode, data) {
-        return ELEMENT_TYPES_TO_DATA_PREVIEW[paramTypeCode](paramName, data);
+        return ELEMENT_TYPES_TO_CONTENT_PREVIEW[paramTypeCode](paramName, data);
     }
 
     getDataByType(paramName, paramTypeCode, data) {
-        return ELEMENT_TYPES_TO_DATA[paramTypeCode](paramName, data);
+        return ELEMENT_TYPES_TO_CONTENT[paramTypeCode](paramName, data);
     }
 }

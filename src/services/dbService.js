@@ -47,12 +47,10 @@ export class dbService {
         return this.db.collection(collectionName);
     }
 
-
     async getAndMap(collectionName, mapFunc, query) {
         return await this.db.collection(collectionName)
             .find(query || {}).map(mapFunc).toArray();
     }
-
 
     async getSingle(collectionName, query, projectionFields = {}, projection = {}) {
         let fullProjection = {};
